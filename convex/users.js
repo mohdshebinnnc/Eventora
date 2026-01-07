@@ -22,7 +22,7 @@ export const store = mutation({
     if (user !== null) {
       // If we've seen this identity before but the name has changed, patch the value.
       if (user.name !== identity.name) {
-        await ctx.db.patch(user._id, { name: identity.name });
+        await ctx.db.patch(user._id, { name: identity.name, updatedAt: Date.now() });
       }
       return user._id;
     }
@@ -31,7 +31,7 @@ export const store = mutation({
       name: identity.name ?? "Anonymous",
       tokenIdentifier: identity.tokenIdentifier,
       email: identity.email ?? "",
-      imageUrl: identity.pictureUrl,
+      imageUrl: identity.pictureUrl ?? "",
       hasCompletedOnboarding: false,
       freeEventsCreated: 0,
       createdAt: Date.now(),
@@ -42,19 +42,19 @@ export const store = mutation({
 
 
 export const getCurrentUser = query({
-    handler:async(ctx)=>{
-        const identity = await ctx.auth.getUserIdentity();
-        if(!identity){
-            return null;
-        }
-
-        const user = await ctx.db
-            .query("users")
-            .withIndex("by_token", (q)=>
-                q.eq("tokenIdentifier", identity.tokenIdentifier),
-            )
-            .unique();
-
-        return user;
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return null;
     }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) =>
+        q.eq("tokenIdentifier", identity.tokenIdentifier),
+      )
+      .unique();
+
+    return user;
+  }
 })  
