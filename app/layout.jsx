@@ -4,6 +4,7 @@ import Header from "@/components/header";
 import { ConvexClientProvider } from "./ConvexClientProvider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
+import { Toaster } from "sonner";
 
 export const metadata = {
   title: "Eventora",
@@ -39,7 +40,7 @@ export default function RootLayout({ children }) {
                   {children}
                 </div>
 
-                {/* Footer */}
+                <Toaster richColors/>
               </main>
             </ConvexClientProvider>
           </ClerkProvider>
