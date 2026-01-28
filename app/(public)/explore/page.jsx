@@ -1,10 +1,13 @@
 "use client"
 
+import EventCard from '@/components/event-card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel'
 import { api } from '@/convex/_generated/api'
 import { useConvexQuery } from '@/hooks/use-convex-query'
+import { CATEGORIES } from '@/lib/data'
 import { createLocationSlug } from '@/lib/location.utils'
 import { format } from 'date-fns'
 import Autoplay from 'embla-carousel-autoplay'
@@ -32,8 +35,19 @@ const ExplorePage = () => {
 
         const {data:categoryCounts}=useConvexQuery(api.explore.getCategoryCounts)
 
+        const categoriesWithCounts=CATEGORIES.map((cat)=>{
+            return {
+                ...cat,
+                count:categoryCounts?.[cat.id] || 0
+            }
+        })
+
         const handleEventClick=(slug)=>{
             router.push(`/events/${slug}`)
+        }
+
+        const handleCategoryClick=(categoryId)=>{
+            router.push(`/events/${categoryId}`)
         }
 
         const handleViewLocalEvents=()=>{
@@ -153,14 +167,81 @@ const ExplorePage = () => {
                             View All <ArrowRight className='w-4 h-4'/>
                         </Button>
                     </div>
+
+                    <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
+                        {localEvents.map((event) => (
+                            <EventCard 
+                                key={event._id} 
+                                event={event}
+                                variant="grid"
+                                onClick={() => handleEventClick(event.slug)}
+                            />
+                        ))}
+                    </div>
                 </div>
             )}
 
             {/* Browse by Category */}
+            <div className='mb-16'>
+                <h2 className='text-3xl font-bold mb-6'>Browse by Category</h2>
+                <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+                    {categoriesWithCounts.map((category) => (
+                        <Card
+                        key={category._id}
+                        className='py-2 group cursor-pointer hover:shadow-lg transition-all hover:border-purple-500/50'
+                        onClick={() => handleCategoryClick(category.id)}
+                        >
+                            <CardContent className="px-3 sm:p-6 flex items-center gap-4">
+                                <div className='text-3xl sm:text-4xl'>{category.icon}</div>
+                                <div className='flex-1 min-w-0'>
+                                    <h3 className='font-semibold mb-1 group-hover:text-purple-500/50 transition-colors'>{category.label}</h3>
+                                    <p className='text-sm text-muted-foreground'>{category.count} Event{category.count !== 1 ? 's' : ''}</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            </div>
 
             {/* Popular Events Across Country */}
+            {popularEvents && popularEvents.length > 0 && (
+                <div className='mb-16'>
+                    <div className='mb-6'>
+                        <h2 className='text-3xl font-bold mb-1'>Popular Across Country</h2>
+                        <p className='text-muted-foreground'>Trending events nationwide</p>
+                    </div>
+                    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+                        {popularEvents.map((event) => (
+                            <EventCard 
+                                key={event._id} 
+                                event={event}
+                                variant="list"
+                                onClick={() => handleEventClick(event.slug)}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Empty State */}
+            {!loadingFeatured && 
+                !loadingLocal && 
+                !loadingPopular &&
+                (!featuredEvents || featuredEvents.length === 0) &&
+                (!localEvents || localEvents.length === 0) &&
+                (!popularEvents || popularEvents.length === 0) && (
+                    <Card className="p-12 text-center">
+                        <div className='max-w-md mx-auto space-y-4'>
+                            <div className='text-6xl mb-4'>🎉</div>
+                            <h2 className='text-2xl font-bold mb-1'>No Events yet</h2>
+                            <p className='text-muted-foreground'>Be the first to create an event in your area!</p>
+                            <Button asChild className="gap-2">
+                                <a href='/create-event'>Create Event</a>
+                            </Button>
+                        </div>
+                    </Card>
+                )
+            }
         </>
     )
 }
