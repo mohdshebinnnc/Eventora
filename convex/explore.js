@@ -81,7 +81,7 @@ export const getEventsByCategory = query({
         const now = Date.now();
         const events = await ctx.db
             .query("events")
-            .withIndex("by_category", (q) => q.eq(q.field("category"), args.category))
+            .withIndex("by_category", (q) => q.eq("category", args.category))
             .filter((q) => q.gte(q.field("startDate"), now))
             .collect();
 
