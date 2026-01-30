@@ -29,44 +29,46 @@ const ExplorePage = () => {
             city:currentUser?.location?.city || "Gurugram",
             state:currentUser?.location?.state || "Haryana",
             limit:4
-        })
-
-        const {data:popularEvents,isLoading:loadingPopular}=useConvexQuery(api.explore.getPopularEvents,{limit:6})
-
-        const {data:categoryCounts}=useConvexQuery(api.explore.getCategoryCounts)
-
-        const categoriesWithCounts=CATEGORIES.map((cat)=>{
-            return {
-                ...cat,
-                count:categoryCounts?.[cat.id] || 0
-            }
-        })
-
-        const handleEventClick=(slug)=>{
-            router.push(`/events/${slug}`)
         }
+    )
 
-        const handleCategoryClick=(categoryId)=>{
-            router.push(`/events/${categoryId}`)
+    const {data:popularEvents,isLoading:loadingPopular}=useConvexQuery(api.explore.getPopularEvents,{limit:6})
+
+    const {data:categoryCounts}=useConvexQuery(api.explore.getCategoryCounts)
+
+    const categoriesWithCounts=CATEGORIES.map((cat)=>{
+        return {
+            ...cat,
+            count:categoryCounts?.[cat.id] || 0
         }
+    })
 
-        const handleViewLocalEvents=()=>{
-            const city =currentUser?.location?.city || "Gurugram"
-            const state =currentUser?.location?.state || "Haryana"
+    const handleEventClick=(slug)=>{
+        router.push(`/events/${slug}`)
+    }
 
-            const slug=createLocationSlug(city,state)
-            router.push(`/explore/${slug}`)
-        }
+    const handleCategoryClick=(categoryId)=>{
+        router.push(`/explore/${categoryId}`)
+    }
 
-        //Loading State
-        const isLoading=loadingFeatured || loadingLocal || loadingPopular
-        if(isLoading){
-            return (
-                <div className='min-h-screen flex items-center justify-center'>
-                    <Loader2 className='w-8 h-8 animate-spin text-purple-500'/>
-                </div>
-            )
-        }
+    const handleViewLocalEvents=()=>{
+        const city =currentUser?.location?.city || "Gurugram"
+        const state =currentUser?.location?.state || "Haryana"
+
+        const slug=createLocationSlug(city,state)
+        router.push(`/explore/${slug}`)
+    }
+
+    //Loading State
+    const isLoading=loadingFeatured || loadingLocal || loadingPopular
+    
+    if(isLoading){
+        return (
+            <div className='min-h-screen flex items-center justify-center'>
+                <Loader2 className='w-8 h-8 animate-spin text-purple-500'/>
+            </div>
+        )
+    }
     return (
         <>
             <div className='pb-12 text-center'>
@@ -187,7 +189,7 @@ const ExplorePage = () => {
                 <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
                     {categoriesWithCounts.map((category) => (
                         <Card
-                        key={category._id}
+                        key={category.id}
                         className='py-2 group cursor-pointer hover:shadow-lg transition-all hover:border-purple-500/50'
                         onClick={() => handleCategoryClick(category.id)}
                         >
