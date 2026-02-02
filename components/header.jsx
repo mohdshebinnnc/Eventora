@@ -27,6 +27,7 @@ const Header = () => {
                     </Link>
 
                     {/* Search & Location */}
+                    
 
                     {/* Right Side Actions */}
                     <div className='flex items-center'>
