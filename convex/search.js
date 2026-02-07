@@ -1,3 +1,4 @@
+import { v } from "convex/values";
 import { query } from "./_generated/server";
 
 export const searchEvents = query({
@@ -14,7 +15,7 @@ export const searchEvents = query({
         const now=Date.now()
         const searchResults=await ctx.db
             .query("events")
-            .withSearchIndex("search_title", (q)=>q.search(args.query))
+            .withSearchIndex("search_title", (query)=>query.search("title", args.query))
             .filter((q)=>q.gte(q.field("startDate"),now))
             .take(args.limit ?? 5)
 
