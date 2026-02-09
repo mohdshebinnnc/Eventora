@@ -92,6 +92,7 @@ const Header = () => {
                         </Unauthenticated>
                     </div>
                 </div>
+                <div></div>
 
                 {/* mobile Search &Location */}
                 <div className='md:hidden border-t px-3 py-3'>
