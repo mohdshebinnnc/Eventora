@@ -21,7 +21,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Loader2, Check, Lock } from 'lucide-react';
+import { CalendarIcon, Loader2, Check, Lock, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 
 const timeRegex=/^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -55,12 +56,14 @@ const CreateEvent = () => {
     const [showImagePicker,setShowImagePicker]=useState(false)
     const [showUpgradeModal,setShowUpgradeModal]=useState(false)
     const [upgradeReason,setUpgradeReason]=useState("limit")
+    const [aiPrompt,setAiPrompt]=useState("")
+    const [aiLoading,setAiLoading]=useState(false)
 
     const {has}=useAuth()
     const hasPro=has?.({plan:"pro"})
 
     const {data:currentUser}=useConvexQuery(api.users.getCurrentUser)
-    const {mutate: createEvent, isLoading}=useConvexMutation(api.events.createEvent)
+    const {mutate: createEvent, isLoading}=useConvexMutation(api.event.createEvent)
 
     const {register,handleSubmit,watch,setValue,control,formState:{errors}}=useForm({
         resolver:zodResolver(eventSchema),
@@ -101,10 +104,43 @@ const CreateEvent = () => {
         ...(!hasPro ? ["#4c1d95", "#065f46", "92400e", "#7f1d1d", "#831843"] : [])
     ]
     
+    const handleAIGenerate = async () => {
+        if(!aiPrompt.trim() || aiPrompt.trim().length < 3) {
+            toast.error("Please describe your event in more detail")
+            return
+        }
+        setAiLoading(true)
+        try {
+            const res = await fetch("/api/ai/generate-event", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ prompt: aiPrompt }),
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error)
+
+            // Auto-fill form
+            if(data.title) setValue("title", data.title)
+            if(data.description) setValue("description", data.description)
+            if(data.category) setValue("category", data.category)
+            if(data.capacitySuggestion) setValue("capacity", data.capacitySuggestion)
+            if(data.ticketType) setValue("ticketType", data.ticketType)
+            if(data.ticketPriceSuggestion) setValue("ticketPrice", data.ticketPriceSuggestion)
+            if(data.venueSuggestion) setValue("venue", data.venueSuggestion)
+            if(data.locationType) setValue("locationType", data.locationType)
+
+            toast.success("AI generated event details! Review and customize below.")
+        } catch (error) {
+            toast.error(error.message || "Failed to generate. Try again.")
+        } finally {
+            setAiLoading(false)
+        }
+    }
+
     const onSubmit = async (data) => {
         try {
             if (!coverImage) {
-                alert("Please select a cover image");
+                toast.error("Please select a cover image");
                 return;
             }
 
@@ -118,26 +154,32 @@ const CreateEvent = () => {
             endDateTime.setHours(parseInt(endTimeParts[0]), parseInt(endTimeParts[1]));
 
             if (endDateTime <= startDateTime) {
-                alert("End time must be after start time");
+                toast.error("End time must be after start time");
                 return;
             }
 
-            const eventId = await createEvent({
+            const result = await createEvent({
                 ...data,
                 startDate: startDateTime.getTime(),
                 endDate: endDateTime.getTime(),
                 coverImage,
                 themeColor,
-                tags: [] // Adding empty tags for now as schema requires it
+                tags: data.tags || [],
+                hasPro,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                country: "India",
             });
 
-            router.push(`/event/${eventId}`);
+            toast.success("Event created! 🎉")
+            router.push(`/events/${result.slug}`);
             
         } catch (error) {
             console.error(error);
-            if(error.message.includes("limit")){
+            if(error.message?.includes("limit")){
                 setUpgradeReason("limit");
                 setShowUpgradeModal(true);
+            } else {
+                toast.error(error.message || "Failed to create event")
             }
         }
     };
@@ -212,6 +254,33 @@ const CreateEvent = () => {
 
             {/* Right : form */}
             <form onSubmit={handleSubmit(onSubmit)} >
+                {/* AI Generation */}
+                <div className="space-y-4 border border-gray-200/20 rounded-xl p-6 bg-white/5 mb-4">
+                    <Label className="text-xl font-semibold flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-purple-400" />
+                        AI Event Generator
+                    </Label>
+                    <p className="text-sm text-white/70">Describe your event in a few words and let AI fill in the details</p>
+                    <div className="flex gap-2">
+                        <Input
+                            value={aiPrompt}
+                            onChange={(e) => setAiPrompt(e.target.value)}
+                            className="bg-white flex-1"
+                            placeholder='e.g. "tech meetup in Mumbai" or "outdoor yoga workshop"'
+                            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAIGenerate())}
+                        />
+                        <Button
+                            type="button"
+                            onClick={handleAIGenerate}
+                            disabled={aiLoading}
+                            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white gap-2 shrink-0"
+                        >
+                            {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                            {aiLoading ? "Generating..." : "Generate"}
+                        </Button>
+                    </div>
+                </div>
+
                 {/* Event Details */}
                 <div className="space-y-4 border border-gray-200/20 rounded-xl p-6 bg-white/5">
                         <Label className="text-xl font-semibold">Event Details</Label>

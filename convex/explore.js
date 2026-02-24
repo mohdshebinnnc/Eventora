@@ -1,5 +1,39 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
+import { internal } from "./_generated/api";
+
+// Interest-based recommendations
+export const getRecommendedEvents = query({
+    args: {
+        limit: v.optional(v.number()),
+    },
+    handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) return [];
+
+        const user = await ctx.db
+            .query("users")
+            .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+            .unique();
+
+        if (!user || !user.interests || user.interests.length === 0) return [];
+
+        const now = Date.now();
+        const events = await ctx.db
+            .query("events")
+            .withIndex("by_start_date")
+            .filter((q) => q.gte(q.field("startDate"), now))
+            .collect();
+
+        // Filter events matching user interests and exclude user's own events
+        const recommended = events
+            .filter((e) => user.interests.includes(e.category) && e.organizerId !== user._id)
+            .sort((a, b) => b.registrationCount - a.registrationCount)
+            .slice(0, args.limit ?? 6);
+
+        return recommended;
+    }
+});
 
 export const getFeaturedEvents = query({
     args: {
@@ -15,7 +49,7 @@ export const getFeaturedEvents = query({
             .collect();
 
         const featured = events
-            .sort((a, b) => b.registeredCount - a.registeredCount)
+            .sort((a, b) => b.registrationCount - a.registrationCount)
             .slice(0, args.limit ?? 3);
 
         return featured;
@@ -64,7 +98,7 @@ export const getPopularEvents = query({
 
         // Sort by registration count
         const popular = events
-            .sort((a, b) => b.registeredCount - a.registeredCount)
+            .sort((a, b) => b.registrationCount - a.registrationCount)
             .slice(0, args.limit ?? 3);
 
         return popular;

@@ -8,7 +8,7 @@ import { Button } from './ui/button';
 import { Authenticated, Unauthenticated } from 'convex/react';
 import { BarLoader } from 'react-spinners';
 import { useStoreUser } from '@/hooks/use-store-user';
-import { Building, Crown, Plus, Ticket } from 'lucide-react';
+import { Building, Crown, Menu, Plus, Ticket, X } from 'lucide-react';
 import { OnboardingModal } from './onboarding-modal';
 import { useOnboarding } from '@/hooks/use-onboarding';
 import SearchLocationBar from './search-location-bar';
@@ -18,6 +18,7 @@ import UpgradeModal from './upgrade-modal';
 const Header = () => {
     const { isLoading } = useStoreUser();
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const {showOnboarding,handleOnboardingSkip,handleOnboardingComplete}=useOnboarding()
 
     const {has} = useAuth()
@@ -40,13 +41,13 @@ const Header = () => {
                         )}
                     </Link>
 
-                    {/* Search & Location */}
+                    {/* Search & Location (desktop) */}
                     <div className='hidden md:flex flex-1 justify-center gap-2'>
                         <SearchLocationBar />
                     </div>
 
-                    {/* Right Side Actions */}
-                    <div className='flex items-center'>
+                    {/* Right Side Actions (desktop) */}
+                    <div className='hidden md:flex items-center'>
                     {!hasPro &&(
                         <Button variant={"ghost"} onClick={() => setShowUpgradeModal(true)} size="sm">
                             Pricing
@@ -91,13 +92,78 @@ const Header = () => {
 
                         </Unauthenticated>
                     </div>
-                </div>
-                <div></div>
 
-                {/* mobile Search &Location */}
+                    {/* Mobile: hamburger + user avatar */}
+                    <div className='flex md:hidden items-center gap-2'>
+                        <Authenticated>
+                            <UserButton>
+                                <UserButton.MenuItems>
+                                    <UserButton.Link
+                                        label='My Tickets'
+                                        labelIcon={<Ticket size={16} />}
+                                        href='/my-tickets'
+                                    />
+                                    <UserButton.Link
+                                        label='My Events'
+                                        labelIcon={<Building size={16} />}
+                                        href='/my-events'
+                                    />
+                                    <UserButton.Action label='manageAccount' />
+                                </UserButton.MenuItems>
+                            </UserButton>
+                        </Authenticated>
+
+                        <Button variant="ghost" size="sm" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                            {mobileMenuOpen ? <X className='w-5 h-5' /> : <Menu className='w-5 h-5' />}
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Mobile Search & Location */}
                 <div className='md:hidden border-t px-3 py-3'>
                     <SearchLocationBar />
                 </div>
+
+                {/* Mobile Menu Dropdown */}
+                {mobileMenuOpen && (
+                    <div className='md:hidden border-t bg-background/95 backdrop-blur-xl animate-in slide-in-from-top-2 duration-200'>
+                        <div className='px-6 py-4 space-y-2'>
+                            <Button variant="ghost" size="sm" asChild className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
+                                <Link href="/explore">🔍 Explore Events</Link>
+                            </Button>
+
+                            <Authenticated>
+                                <Button variant="ghost" size="sm" asChild className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
+                                    <Link href="/create-event">
+                                        <Plus className='w-4 h-4 mr-2' /> Create Event
+                                    </Link>
+                                </Button>
+                                <Button variant="ghost" size="sm" asChild className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
+                                    <Link href="/my-tickets">
+                                        <Ticket className='w-4 h-4 mr-2' /> My Tickets
+                                    </Link>
+                                </Button>
+                                <Button variant="ghost" size="sm" asChild className="w-full justify-start" onClick={() => setMobileMenuOpen(false)}>
+                                    <Link href="/my-events">
+                                        <Building className='w-4 h-4 mr-2' /> My Events
+                                    </Link>
+                                </Button>
+                            </Authenticated>
+
+                            <Unauthenticated>
+                                <SignInButton mode='modal'>
+                                    <Button size="sm" className="w-full">Sign In</Button>
+                                </SignInButton>
+                            </Unauthenticated>
+
+                            {!hasPro && (
+                                <Button variant="outline" size="sm" className="w-full" onClick={() => { setShowUpgradeModal(true); setMobileMenuOpen(false) }}>
+                                    <Crown className='w-4 h-4 mr-2' /> Upgrade to Pro
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* Loader */}
                 {isLoading && (

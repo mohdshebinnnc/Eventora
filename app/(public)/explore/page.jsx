@@ -11,10 +11,11 @@ import { CATEGORIES } from '@/lib/data'
 import { createLocationSlug } from '@/lib/location.utils'
 import { format } from 'date-fns'
 import Autoplay from 'embla-carousel-autoplay'
-import { ArrowRight, Calendar, Loader2, MapPin, Users } from 'lucide-react'
+import { ArrowRight, Calendar, MapPin, Sparkles, Users } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import React, { useRef } from 'react'
+import { ExploreSkeleton, EventCardSkeleton } from '@/components/loading-skeletons'
 
 const ExplorePage = () => {
     //fetch current user for location
@@ -35,6 +36,8 @@ const ExplorePage = () => {
     const {data:popularEvents,isLoading:loadingPopular}=useConvexQuery(api.explore.getPopularEvents,{limit:6})
 
     const {data:categoryCounts}=useConvexQuery(api.explore.getCategoryCounts)
+
+    const {data:recommendedEvents}=useConvexQuery(api.explore.getRecommendedEvents,{limit:6})
 
     const categoriesWithCounts=CATEGORIES.map((cat)=>{
         return {
@@ -59,16 +62,13 @@ const ExplorePage = () => {
         router.push(`/explore/${slug}`)
     }
 
-    //Loading State
+    //Loading State — now uses skeleton
     const isLoading=loadingFeatured || loadingLocal || loadingPopular
     
     if(isLoading){
-        return (
-            <div className='min-h-screen flex items-center justify-center'>
-                <Loader2 className='w-8 h-8 animate-spin text-purple-500'/>
-            </div>
-        )
+        return <ExploreSkeleton />
     }
+
     return (
         <>
             <div className='pb-12 text-center'>
@@ -150,6 +150,33 @@ const ExplorePage = () => {
                     </Carousel>
                 </div>
             ) }
+
+            {/* For You - Interest-based */}
+            {recommendedEvents && recommendedEvents.length > 0 && (
+                <div className='mb-16'>
+                    <div className='flex items-center justify-between mb-6'>
+                        <div>
+                            <h2 className='text-3xl font-bold mb-1 flex items-center gap-2'>
+                                <Sparkles className='w-7 h-7 text-purple-400' /> For You
+                            </h2>
+                            <p className='text-muted-foreground'>
+                                Based on your interests
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+                        {recommendedEvents.map((event) => (
+                            <EventCard 
+                                key={event._id} 
+                                event={event}
+                                variant="grid"
+                                onClick={() => handleEventClick(event.slug)}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Local Events */}
             {localEvents && localEvents.length > 0 && (
